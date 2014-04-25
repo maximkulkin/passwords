@@ -1,9 +1,18 @@
-module Crypto.Password where
+module Crypto.Password
+  ( CharType(..)
+  , PasswordFeature(..)
+
+  , generatePassword
+  , validatePassword
+
+  , formatCharType
+  , passwordFeatureMessage
+  ) where
 
 import qualified Control.Monad.Random as Random (fromList)
 import Data.List (foldl')
 import Data.Map (Map)
-import qualified Data.Map as Map (empty, elems, insert, lookup, toList)
+import qualified Data.Map as Map (empty, elems, insert, lookup, fromList, toList)
 import Data.Maybe (fromMaybe)
 import System.Random (randomRIO)
 
@@ -35,6 +44,7 @@ isCharType Uppercase = (`elem` uppercaseChars)
 isCharType Digit     = (`elem` digitChars)
 isCharType Symbol    = (`elem` symbolChars)
 
+-- | Return description of given char type
 formatCharType :: CharType -> String
 formatCharType Lowercase = "lowercase character(s)"
 formatCharType Uppercase = "uppercase character(s)"
@@ -57,6 +67,7 @@ data PasswordFeature = Length Int
                      | IncludeAtLeast Int CharType
                      deriving (Eq, Show)
 
+-- | Return description of given password feature
 passwordFeatureMessage :: PasswordFeature -> String
 passwordFeatureMessage (Length x) = "should be at least " ++ show x ++ " character(s) long"
 passwordFeatureMessage (Include t) = "should include " ++ formatCharType t
@@ -69,6 +80,7 @@ newPasswordGenState m l =
   PasswordGenState m (sum . Map.elems $ m) l
 
 
+-- | Generate password based on given password features
 generatePassword :: [PasswordFeature] -> IO String
 generatePassword features = generate (newPasswordGenState minCounts len) ""
   where generate :: PasswordGenState -> String -> IO String
@@ -97,18 +109,25 @@ generatePassword features = generate (newPasswordGenState minCounts len) ""
                 [] -> 8
                 (Length x:_) -> x
 
-        isLength :: PasswordFeature -> Bool
-        isLength (Length _) = True
-        isLength _ = False
+          where isLength :: PasswordFeature -> Bool
+                isLength (Length _) = True
+                isLength _ = False
 
         minCounts :: Map CharType Int
-        minCounts = foldl' updateCountsWithFeature Map.empty features
+        minCounts = let counts = foldl' updateCountsWithFeature Map.empty features
+                     in if (counts == Map.empty) then defaultCounts else counts
           where updateCountsWithFeature m (Include t) = Map.insert t 0 m
                 updateCountsWithFeature m (IncludeAtLeast x t) = Map.insert t x m
                 updateCountsWithFeature m _ = m
 
+                defaultCounts = Map.fromList [(Lowercase, 0), (Digit, 0)]
 
-validatePassword :: [PasswordFeature] -> String -> Either PasswordFeature ()
+
+-- | Validate password based on features. Returns either first password feature
+-- that password does not conform to or void.
+validatePassword :: [PasswordFeature]            -- password features to validate with
+                 -> String                       -- password
+                 -> Either PasswordFeature ()
 validatePassword features password = foldl (>>) (Right ()) $ map (checkEither password) features
   where checkEither :: String -> PasswordFeature -> Either PasswordFeature ()
         checkEither s c = if check s c then Right () else Left c

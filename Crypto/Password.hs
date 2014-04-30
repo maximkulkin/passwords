@@ -49,7 +49,7 @@ formatCharType :: CharType -> String
 formatCharType Lowercase = "lowercase character(s)"
 formatCharType Uppercase = "uppercase character(s)"
 formatCharType Digit     = "digit(s)"
-formatCharType Symbol    = "symbol(s)"
+formatCharType Symbol    = "symbol character(s)"
 
 
 randomElement :: [a] -> IO a

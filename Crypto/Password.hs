@@ -33,7 +33,7 @@ instance Ord CharType where
   compare x y | x == y    = EQ
               | otherwise = GT
 
-lowercaseChars = "abcdefghijkpqrstuvwxyz"
+lowercaseChars = "abcdefghijklmnopqrstuvwxyz"
 uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 digitChars     = "0123456789"
 symbolChars    = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
